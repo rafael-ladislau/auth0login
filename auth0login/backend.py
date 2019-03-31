@@ -3,7 +3,9 @@
 from six.moves.urllib import request
 from jose import jwt
 from social_core.backends.oauth import BaseOAuth2
+import logging
 
+log = logging.getLogger(__name__)
 
 class Auth0(BaseOAuth2):
     """Auth0 OAuth authentication backend"""
@@ -22,7 +24,9 @@ class Auth0(BaseOAuth2):
 
     def get_user_id(self, details, response):
         """Return current user id."""
-        return details['user_id']
+
+        log.warn("details " + str(details))
+        return details['email']
 
     def get_user_details(self, response):
         # Obtain JWT and the keys to validate the signature
@@ -31,8 +35,11 @@ class Auth0(BaseOAuth2):
         issuer = 'https://' + self.setting('DOMAIN') + '/'
         audience = self.setting('KEY')  # CLIENT_ID
         payload = jwt.decode(id_token, jwks.read(), algorithms=['RS256'], audience=audience, issuer=issuer)
-
+        log.warn("payload " + str(payload))
+        log.warn("response " + str(response))
         return {'username': payload['nickname'],
-                'first_name': payload['name'],
-                'picture': payload['picture'],
-                'user_id': payload['sub']}
+                'email': payload['name'],
+                'fullname': payload['https://openid.org/user_metadata']["first_name"] + " " + payload['https://openid.org/user_metadata']["last_name"],
+                'first_name': payload['https://openid.org/user_metadata']["first_name"],
+                'last_name': payload['https://openid.org/user_metadata']["last_name"]
+                }
